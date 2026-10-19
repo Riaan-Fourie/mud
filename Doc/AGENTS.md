@@ -54,6 +54,9 @@ MVP plan.
   document of links (the default), or opens the files directly inside it, one
   tab each. A folder with nothing to list gets a blank page and an info-bar
   warning
+- Opening a single file gives it a window of its own (the default) or, per the
+  `file-open-behavior` setting, a tab at the end of the front document window's
+  group, wherever that window is
 - Quit on last window close
 - CLI tool: `mud -u` / `-d` for HTML output, `-f` for fragment output, stdin
   support, theme and view-option flags, `--primer` for the agent authoring
@@ -102,7 +105,10 @@ MVP plan.
   folder itself, which `DocumentModel` makes a document of; under `.tabs`
   `openFolderAsTabs`, one window per `MarkdownFolder.markdownFiles` entry,
   tabbed with an explicit `addTabbedWindow`. An already-open document is
-  surfaced where it is; a folder with no Markdown gets a window on itself
+  surfaced where it is; a folder with no Markdown gets a window on itself.
+  Under `fileOpenBehavior` `.tab` a single file joins the end of the front
+  document window's group, also explicitly, since automatic tabbing only joins
+  a window on a Space that is showing
 - `MarkdownFolder.swift` — What a folder open yields under `.tabs`: the
   Markdown files directly inside, top level only, name-ordered — nil when the
   URL isn't a folder (packages included, read as one document), empty when it
@@ -273,6 +279,8 @@ MVP plan.
   autoExpandChanges/foldableHeadings toggles
 - `SidebarPane.swift` — outline/changes enum
 - `FloatingControlsPosition.swift` — Floating-bar placement enum
+- `FileOpenBehavior.swift` - window/tab enum: what Mud does with a single file
+  it is handed
 - `FolderOpenBehavior.swift` — index/tabs enum: what Mud makes of a folder it
   is handed
 - `EditorFormat.swift` — markdown/html enum for the "Open In" handoff
