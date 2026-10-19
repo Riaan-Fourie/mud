@@ -1,0 +1,50 @@
+# Builds the patched Mud that Riaan runs (Jarvis #466): a file opened on its
+# own joins the front document window as a tab. Ad-hoc signed, because this
+# fork has no Developer ID. The update feed (SUFeedURL in App/Info.plist)
+# points at this branch, which has no appcast, so an official release can't
+# silently replace the patch.
+name: Build patched Mud
+
+on:
+  push:
+    branches: [feat/466-open-as-tabs]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      SIGNING: CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER=
+      VERSION: 4.2.0-466
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Xcode
+        run: xcodebuild -version
+
+      - name: Download Sparkle
+        run: .github/scripts/update-sparkle
+
+      - name: Build
+        run: |
+          xcodebuild build -project Mud.xcodeproj -scheme "Mud - Direct" \
+            -configuration Release-Direct -destination 'generic/platform=macOS' \
+            -derivedDataPath build MARKETING_VERSION=$VERSION $SIGNING
+
+      - name: Package
+        run: |
+          APP=build/Build/Products/Release-Direct/Mud.app
+          codesign --verify --deep --strict "$APP"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
+            -c "Print :SUFeedURL" -c "Print :SUEnableAutomaticChecks" "$APP/Contents/Info.plist"
+          ditto -c -k --keepParent "$APP" Mud-$VERSION.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mud-4.2.0-466
+          path: Mud-4.2.0-466.zip
+          retention-days: 90
