@@ -107,9 +107,14 @@ class DocumentController: NSDocumentController {
             self?.windowControllers.removeAll { $0 === controller }
         }
         windowControllers.append(windowController)
+        // The new tab goes at the end of the group, not beside the front
+        // tab, so files read in the order they arrived. On a hidden Space
+        // the front tab doesn't change as tabs are added, and inserting
+        // beside it would stack the newest first.
         if tabIntoFront, let window = windowController.window,
            let host = frontDocumentWindow(excluding: window) {
-            host.addTabbedWindow(window, ordered: .above)
+            let last = host.tabbedWindows?.last ?? host
+            last.addTabbedWindow(window, ordered: .above)
         }
         windowController.showWindow(nil)
         if noteRecent {
