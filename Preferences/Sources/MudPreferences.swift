@@ -89,6 +89,7 @@ extension MudPreferences {
         case lighting                   = "lighting"
         case theme                      = "theme"
         case quitOnClose                = "quit-on-close"
+        case fileOpenBehavior           = "file-open-behavior"
         case folderOpenBehavior         = "folder-open-behavior"
         case enabledExtensions          = "enabled-extensions"
 
@@ -231,6 +232,11 @@ extension MudPreferences {
     public var quitOnClose: Bool {
         get { read(.quitOnClose, default: true) }
         nonmutating set { write(newValue, forKey: .quitOnClose) }
+    }
+
+    public var fileOpenBehavior: FileOpenBehavior {
+        get { read(.fileOpenBehavior, default: .window) }
+        nonmutating set { write(newValue, forKey: .fileOpenBehavior) }
     }
 
     /// What Mud makes of a folder it is asked to open. The default is the

@@ -37,7 +37,9 @@ class DocumentController: NSDocumentController {
             return
         }
 
-        presentWindow(for: url, noteRecent: !url.isBundleResource)
+        presentWindow(
+            for: url, noteRecent: !url.isBundleResource,
+            asTab: AppState.shared.fileOpenBehavior == .tab)
         completionHandler(nil, false, nil)
     }
 
@@ -85,8 +87,17 @@ class DocumentController: NSDocumentController {
     /// Returns the window only when this call created it, which is what
     /// `openFolder` needs to know: an already-open document keeps its place
     /// instead of being pulled into the folder's tab group.
+    ///
+    /// `asTab` adds a new window to the end of the front document window's
+    /// group. It is explicit because automatic tabbing only joins a window on
+    /// a Space that is showing, so a file opened from another app's
+    /// full-screen Space would otherwise get a window of its own. The end,
+    /// not beside the front tab: on a hidden Space the front tab doesn't move,
+    /// and files would stack newest-first.
     @discardableResult
-    private func presentWindow(for url: URL, noteRecent: Bool) -> NSWindow? {
+    private func presentWindow(
+        for url: URL, noteRecent: Bool, asTab: Bool = false
+    ) -> NSWindow? {
         if let existingWindow = findWindow(for: url) {
             existingWindow.makeKeyAndOrderFront(nil)
             didOpenDocument()
@@ -98,6 +109,11 @@ class DocumentController: NSDocumentController {
             self?.windowControllers.removeAll { $0 === controller }
         }
         windowControllers.append(windowController)
+        if asTab, let window = windowController.window,
+           let host = frontDocumentWindow(excluding: window) {
+            (host.tabbedWindows?.last ?? host)
+                .addTabbedWindow(window, ordered: .above)
+        }
         windowController.showWindow(nil)
         if noteRecent {
             noteNewRecentDocumentURL(url)
@@ -121,6 +137,14 @@ class DocumentController: NSDocumentController {
 
     private func findWindow(for url: URL) -> NSWindow? {
         NSApp.windows.first { ($0.windowController as? DocumentWindowController)?.fileURL == url }
+    }
+
+    /// `orderedWindows` runs front to back and includes windows on Spaces that
+    /// aren't showing.
+    private func frontDocumentWindow(excluding window: NSWindow) -> NSWindow? {
+        NSApp.orderedWindows.first {
+            $0 !== window && $0.windowController is DocumentWindowController
+        }
     }
 
     /// Opens a markdown file bundled in the app's resources

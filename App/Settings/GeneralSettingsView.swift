@@ -52,6 +52,17 @@ struct GeneralSettingsView: View {
             // }
 
             Section {
+                Picker("Opening a file", selection: $appState.fileOpenBehavior) {
+                    ForEach(FileOpenBehavior.allCases, id: \.self) { behavior in
+                        Text(behavior.label).tag(behavior)
+                    }
+                }
+                Text("A file opened from Finder, the command line, or another app. As a tab, it joins the front window even when that window is full screen in a Space you aren’t looking at.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 Picker("Opening a folder", selection: $appState.folderOpenBehavior) {
                     ForEach(FolderOpenBehavior.allCases, id: \.self) { behavior in
                         Text(behavior.label).tag(behavior)
