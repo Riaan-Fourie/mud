@@ -1,5 +1,5 @@
-# Builds the patched Mud that Riaan runs (Jarvis #466): a file opened on its
-# own joins the front document window as a tab. Ad-hoc signed, because this
+# Builds and tests the file-open-behavior change (Jarvis #466), the code
+# offered upstream, so Riaan can run it with the setting on. Ad-hoc signed, because this
 # fork has no Developer ID. The update feed (SUFeedURL in App/Info.plist)
 # points at this branch, which has no appcast, so an official release can't
 # silently replace the patch.
@@ -7,7 +7,7 @@ name: Build patched Mud
 
 on:
   push:
-    branches: [feat/466-open-as-tabs]
+    branches: [build/466-file-open-behavior]
   workflow_dispatch:
 
 permissions:
@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 45
     env:
       SIGNING: CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER=
-      VERSION: 4.2.0-466
+      VERSION: 4.2.0-466.2
     steps:
       - uses: actions/checkout@v5
 
@@ -28,6 +28,15 @@ jobs:
 
       - name: Download Sparkle
         run: .github/scripts/update-sparkle
+
+      - name: Test preferences
+        run: swift test --package-path Preferences
+
+      - name: Test app
+        run: |
+          xcodebuild test -project Mud.xcodeproj -scheme "Mud - Direct" \
+            -destination 'platform=macOS' -derivedDataPath build-test \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Build
         run: |
@@ -45,6 +54,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Mud-4.2.0-466
-          path: Mud-4.2.0-466.zip
+          name: Mud-4.2.0-466.2
+          path: Mud-4.2.0-466.2.zip
           retention-days: 90
