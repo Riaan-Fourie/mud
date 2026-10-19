@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Installs a CI build of the patched Mud (Jarvis #466) over /Applications/Mud.app.
+#
+#   .github/scripts/install-patched <run-id>
+#
+# The CI build is ad-hoc signed with the hardened runtime and the app-group
+# entitlement. Both stop it launching here, so the main app is re-signed:
+#   1. No hardened runtime: library validation rejects the ad-hoc Sparkle
+#      framework (same fix as the Maccy fork, Jarvis #629).
+#   2. No app-group entitlement: with no team, the group expands to
+#      "org.josephpearson.Mud", the app's own bundle id, which UserDefaults
+#      refuses as a suite name, and MudPreferences.shared force-unwraps it.
+#      Without the entitlement Mud falls back to its hardcoded suite name.
+# Settings live in the org.josephpearson.Mud domain, so they carry over.
+set -euo pipefail
+
+RUN_ID="${1:?usage: install-patched <run-id>}"
+REPO=Riaan-Fourie/mud
+WORK=$(mktemp -d)
+
+gh run download "$RUN_ID" --repo "$REPO" -D "$WORK/dl"
+ditto -x -k "$WORK"/dl/*/Mud-*.zip "$WORK/app" 2>/dev/null \
+  || ditto -x -k "$WORK"/dl/Mud-*.zip "$WORK/app"
+APP="$WORK/app/Mud.app"
+
+codesign --force --deep --sign - --preserve-metadata=entitlements \
+  "$APP/Contents/Frameworks/Sparkle.framework"
+for x in "$APP"/Contents/PlugIns/*.appex; do
+  codesign --force --sign - --preserve-metadata=entitlements "$x"
+done
+codesign --force --sign - "$APP/Contents/Helpers/mud"
+codesign -d --entitlements - --xml "$APP" > "$WORK/ent.plist"
+/usr/libexec/PlistBuddy -c "Delete :com.apple.security.application-groups" "$WORK/ent.plist"
+codesign --force --sign - --entitlements "$WORK/ent.plist" "$APP"
+codesign --verify --deep --strict "$APP"
+
+osascript -e 'tell application id "org.josephpearson.Mud" to quit' 2>/dev/null || true
+sleep 2
+[ -d /Applications/Mud.app ] && trash /Applications/Mud.app
+ditto "$APP" /Applications/Mud.app
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+  -f /Applications/Mud.app
+/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" /Applications/Mud.app/Contents/Info.plist
