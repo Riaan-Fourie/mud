@@ -5,11 +5,11 @@
   <key>ITSAppUsesNonExemptEncryption</key>
   <false/>
   <key>SUFeedURL</key>
-  <string>https://apps.josephpearson.org/mud/appcast.xml</string>
+  <string>https://raw.githubusercontent.com/Riaan-Fourie/mud/refs/heads/feat/466-open-as-tabs/appcast.xml</string>
   <key>SUPublicEDKey</key>
   <string>SLb8PPG1VxkLUhB+eofc/mUpZlXptWwMdBqXUTKjpjc=</string>
   <key>SUEnableAutomaticChecks</key>
-  <true/>
+  <false/>
   <key>MDItemKeywords</key>
   <string>Markdown, GFM</string>
   <key>LSApplicationCategoryType</key>
