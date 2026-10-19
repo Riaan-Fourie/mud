@@ -37,7 +37,8 @@ class DocumentController: NSDocumentController {
             return
         }
 
-        presentWindow(for: url, noteRecent: !url.isBundleResource)
+        presentWindow(
+            for: url, noteRecent: !url.isBundleResource, tabIntoFront: true)
         completionHandler(nil, false, nil)
     }
 
@@ -85,8 +86,16 @@ class DocumentController: NSDocumentController {
     /// Returns the window only when this call created it, which is what
     /// `openFolder` needs to know: an already-open document keeps its place
     /// instead of being pulled into the folder's tab group.
+    ///
+    /// `tabIntoFront` adds a new window as a tab of the front document
+    /// window. It is explicit for the same reason as `openFolderAsTabs`:
+    /// automatic tabbing only joins a window on a Space that is showing, so a
+    /// file opened from another app's full-screen Space would otherwise get a
+    /// window of its own, alone on the Desktop.
     @discardableResult
-    private func presentWindow(for url: URL, noteRecent: Bool) -> NSWindow? {
+    private func presentWindow(
+        for url: URL, noteRecent: Bool, tabIntoFront: Bool = false
+    ) -> NSWindow? {
         if let existingWindow = findWindow(for: url) {
             existingWindow.makeKeyAndOrderFront(nil)
             didOpenDocument()
@@ -98,6 +107,10 @@ class DocumentController: NSDocumentController {
             self?.windowControllers.removeAll { $0 === controller }
         }
         windowControllers.append(windowController)
+        if tabIntoFront, let window = windowController.window,
+           let host = frontDocumentWindow(excluding: window) {
+            host.addTabbedWindow(window, ordered: .above)
+        }
         windowController.showWindow(nil)
         if noteRecent {
             noteNewRecentDocumentURL(url)
@@ -121,6 +134,15 @@ class DocumentController: NSDocumentController {
 
     private func findWindow(for url: URL) -> NSWindow? {
         NSApp.windows.first { ($0.windowController as? DocumentWindowController)?.fileURL == url }
+    }
+
+    /// The document window nearest the front, other than `window`.
+    /// `orderedWindows` runs front to back and still lists windows on a Space
+    /// that isn't showing, which is the case `tabIntoFront` exists for.
+    private func frontDocumentWindow(excluding window: NSWindow) -> NSWindow? {
+        NSApp.orderedWindows.first {
+            $0 !== window && $0.windowController is DocumentWindowController
+        }
     }
 
     /// Opens a markdown file bundled in the app's resources
